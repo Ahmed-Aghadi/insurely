@@ -131,6 +131,10 @@ module.exports = {
                 enabled: true,
                 runs: 1,
             },
+            // To fix the error:
+            // CompilerError: Stack too deep when compiling inline assembly: Variable dataEnd is 2 slot(s) too deep inside the stack.
+            // Error HH600: Compilation failed
+            // this line is needed
             viaIR: true,
         },
     },
