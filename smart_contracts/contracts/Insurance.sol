@@ -16,6 +16,8 @@ interface IExchangeFactory {
 
 error WithdrawFailed();
 
+// rate of native token to liquidity token will be considered as rate at the time of removing liquidity from the exchange. So exchange will act as a price oracle.
+
 contract Insurance is Ownable {
     struct MemberRequest {
         address memberAddress;
@@ -90,7 +92,7 @@ contract Insurance is Ownable {
     JudgementJobFullfilled[] private s_judgesFullfilledJobs; // judges who fullfilled their job that is judged everyone && obviously index starts from 0
     ClaimAccepted[] private s_claimAccepted; // claims which are accepted that more than half of judges has accepted && obviously index starts from 0
 
-    // here balance is with respect to total amount ( s_memberNumber * i_amount ) | refer withdraw function for more details
+    // here balance is in native token | refer withdraw function for more details
     mapping(address => uint256) private s_balance; // member address => balance (after claim accepted)
 
     constructor(
@@ -265,6 +267,7 @@ contract Insurance is Ownable {
         s_requestNumber++;
     }
 
+    // here amount is in native token
     function requestForInsurance(string memory baseUri, uint256 amount) public {
         require(block.timestamp > i_validity, "Contract is not valid anymore");
         require(block.timestamp < i_judgingStartTime, "Judging already started");
@@ -334,11 +337,14 @@ contract Insurance is Ownable {
         require(block.timestamp > i_judgingEndTime, "Judging not ended yet");
         require(s_isFinalJudgementCalculated == false, "Already fullfilled");
 
+        uint256 amountPerMember = i_amount; // in native token
         // remove liquidity from pool
         if (i_useLiquidityPool) {
             IExchange(i_exchangeAddress).removeLiquidity(
                 IERC20(i_exchangeAddress).balanceOf(address(this))
             );
+            uint256 balance = address(this).balance; // native token balance
+            amountPerMember = (balance * 2) / (s_memberNumber - 1); // total balance ( in native token ) is total native token + total liquidity token and rate of liquidity token is with respect reserve of both tokens. Therefore, total liquidity token = total native token.
         }
 
         s_isFinalJudgementCalculated = true;
@@ -350,7 +356,7 @@ contract Insurance is Ownable {
             s_isMinMembersReachedCalculated = true;
             s_isMinMembersReached = false;
             for (uint256 i = 1; i < s_memberNumber; i++) {
-                s_balance[s_idToMemberAddress[i]] += i_amount;
+                s_balance[s_idToMemberAddress[i]] += amountPerMember;
             }
             return;
         }
@@ -364,7 +370,7 @@ contract Insurance is Ownable {
 
         // pay everyone except the judges as no one fullfilled their job
         if (s_judgesFullfilledJobs.length == 0) {
-            uint256 amountForEachMember = (i_amount + i_judgesLength) / (s_memberNumber - 1);
+            uint256 amountForEachMember = (amountPerMember + i_judgesLength) / (s_memberNumber - 1);
             for (uint256 i = 1; i < s_memberNumber; i++) {
                 if (s_addressToJudgeId[s_idToMemberAddress[i]] == 0) {
                     s_balance[s_idToMemberAddress[i]] += amountForEachMember; // no judge will get their money back
@@ -376,8 +382,8 @@ contract Insurance is Ownable {
         // pay all the judges who fullfilled their job
         uint256 amountForEachJudge = ((i_percentageDividedIntoJudges *
             (s_memberNumber - 1) *
-            i_amount) / (100 * s_judgesFullfilledJobs.length));
-        uint256 amountLeftForMembers = ((i_amount * (s_memberNumber - 1)) -
+            amountPerMember) / (100 * s_judgesFullfilledJobs.length));
+        uint256 amountLeftForMembers = ((amountPerMember * (s_memberNumber - 1)) -
             (amountForEachJudge * s_judgesFullfilledJobs.length));
         for (uint256 i = 0; i < s_judgesFullfilledJobs.length; i++) {
             s_judgesFullfilledJobs[i].amount = amountForEachJudge;
@@ -447,15 +453,25 @@ contract Insurance is Ownable {
 
     function withdraw() public {
         require(s_balance[msg.sender] > 0, "No balance");
+        if (!i_useLiquidityPool) {
+            uint256 amount = s_balance[msg.sender];
+            s_balance[msg.sender] = 0;
+            payable(msg.sender).transfer(amount);
+        } else {
+            uint256 amount = 0;
+            uint256 tokenAmount = 0;
+            uint256 balance = address(this).balance;
+            uint256 tokenBalance = IERC20(i_liquidityTokenAddress).balanceOf(address(this));
 
-        uint256 percentAmount = (s_balance[msg.sender] * 100) / (s_memberNumber * i_amount);
-        uint256 amount = (address(this).balance * percentAmount) / 100;
-        uint256 tokenAmount = (IERC20(i_liquidityTokenAddress).balanceOf(address(this)) *
-            percentAmount) / 100;
-        s_balance[msg.sender] = 0;
+            // half of the amount will be paid in native token and half in liquidity token to avoid price slippage
+            amount = s_balance[msg.sender] / 2;
+            tokenAmount = (amount * tokenBalance) / balance;
 
-        payable(msg.sender).transfer(amount);
-        IERC20(i_liquidityTokenAddress).transfer(msg.sender, tokenAmount);
+            s_balance[msg.sender] = 0;
+
+            payable(msg.sender).transfer(amount);
+            IERC20(i_liquidityTokenAddress).transfer(msg.sender, tokenAmount);
+        }
         // (bool success, ) = payable(msg.sender).call{value: amount}("");
         // if (!success) {
         //     revert WithdrawFailed();
