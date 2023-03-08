@@ -27,7 +27,7 @@ After an insurance contract is created, anyone who wants join a particular contr
 Judges are selected using chainlink oracles, one for getting random numbers to select judges randomly and other to perform function after certain period which is also done using oracles. So custom logic based automation + random number is used from chainlink oracles.
 
 If no judges had fullfilled their jobs then everyone except those judges will get their fund inside the pool back. If no claim have majority votes then judges who didn't fullfilled won't get their funds back and everyone else will get their funds back. If claim request is fullfilled then remaining amount is distributed among all the members. Also first judges get their percentage from total pool amount as a prize for fullfilling their job.
-[Fullfillment logic in smart contract](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Insurance.sol#L266)
+[Fullfillment logic in smart contract](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Insurance.sol#L336)
 
 All contracts are deployed on fantom testnet. And moralis is used for getting data from contracts and performing other tasks like pushing json to ipfs folder, etc.
 [smart contract address](https://github.com/Ahmed-Aghadi/insurely/blob/main/client/constants/contractAddress.json)
@@ -80,9 +80,9 @@ Chainlink was used to randomly select an image out of all images of the post whi
 
 #### Atleast one example:
 
-[perform upkeep](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Factory.sol#L84)
+[perform upkeep](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Factory.sol#L97)
 
-[fulfill random words](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Factory.sol#L100)
+[fulfill random words](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Factory.sol#L113)
 
 ### Mantine UI
 
