@@ -20,6 +20,11 @@
                 "internalType": "uint32",
                 "name": "callbackGasLimit",
                 "type": "uint32"
+            },
+            {
+                "internalType": "address",
+                "name": "exchangeFactoryAddress",
+                "type": "address"
             }
         ],
         "stateMutability": "nonpayable",
@@ -110,6 +115,21 @@
             {
                 "internalType": "uint256",
                 "name": "percentDivideIntoJudges",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "useLiquidityPool",
+                "type": "bool"
+            },
+            {
+                "internalType": "address",
+                "name": "liquidityTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "liquidityTokenAmount",
                 "type": "uint256"
             },
             {

@@ -22,6 +22,7 @@ import {
     Textarea,
     Grid,
     SimpleGrid,
+    Checkbox,
 } from "@mantine/core"
 import { ethers } from "ethers"
 import { IconCloudUpload, IconX, IconDownload, IconCheck } from "@tabler/icons"
@@ -29,7 +30,13 @@ import { showNotification, updateNotification } from "@mantine/notifications"
 import { useAccount } from "wagmi"
 import { useSigner } from "wagmi"
 import { useContractRead, useContractWrite, usePrepareContractWrite, useSignMessage } from "wagmi"
-import { factoryAbi, factoryContractAddress, currency } from "../constants"
+import {
+    factoryAbi,
+    factoryContractAddress,
+    currency,
+    exchangeFactoryContractAddress,
+    exchangeFactoryAbi,
+} from "../constants"
 import { Orbis } from "@orbisclub/orbis-sdk"
 import { useRouter } from "next/router"
 
@@ -135,6 +142,18 @@ function Upload() {
     const [title, setTitle] = useState("")
     const [description, setDescription] = useState("")
     const titleValid = title.length > 0
+
+    const [useLiquidity, setUseLiquidity] = useState(false)
+    const [liquidityTokenAddressOpened, setLiquidityTokenAddressOpened] = useState(false)
+    const [liquidityTokenAddress, setLiquidityTokenAddress] = useState("")
+    const liquidityTokenAddressValid = ethers.utils.isAddress(liquidityTokenAddress)
+    const [liquidityTokenAmountOpened, setLiquidityTokenAmountOpened] = useState(false)
+    const [liquidityTokenAmount, setLiquidityTokenAmount] = useState(0)
+    const liquidityTokenAmountValid =
+        !!liquidityTokenAmount &&
+        Number.isInteger(parseInt(liquidityTokenAmount)) &&
+        liquidityTokenAmount > 0
+
     const postValid =
         titleValid &&
         minMembersValid &&
@@ -144,15 +163,16 @@ function Upload() {
         judgingTimeValid &&
         judgesLengthValid &&
         amountValid &&
-        percentDivideIntoJudgesValid
+        percentDivideIntoJudgesValid &&
+        (useLiquidity ? liquidityTokenAddressValid && liquidityTokenAmountValid : true)
 
-    const handlePost = async () => {
+    const handleCreate = async () => {
         if (!isConnected) {
             showNotification({
                 id: "hello-there",
                 autoClose: 5000,
                 title: "Connect Wallet",
-                message: "Please connect your wallet to post content",
+                message: "Please connect your wallet to create insurance contract",
                 color: "red",
                 icon: <IconX />,
                 className: "my-notification-class",
@@ -166,7 +186,7 @@ function Upload() {
                 // onClose: () => console.log("unmounted"),
                 // onOpen: () => console.log("mounted"),
                 autoClose: 5000,
-                title: "Cannot post",
+                title: "Cannot create insurance contract",
                 message: "Filled in all the required fields",
                 color: "red",
                 icon: <IconX />,
@@ -178,13 +198,35 @@ function Upload() {
         showNotification({
             id: "load-data",
             loading: true,
-            title: "Posting...",
-            message: "Please wait while we are posting your content to the blockchain",
+            title: "Creating...",
+            message: "Please wait while we create your insurance contract",
             autoClose: false,
             disallowClose: true,
         })
 
         try {
+            const ExchangeFactorycontractInstance = new ethers.Contract(
+                exchangeFactoryContractAddress,
+                exchangeFactoryAbi,
+                signer
+            )
+            const exchangeAddress = await ExchangeFactorycontractInstance.getExchange(
+                liquidityTokenAddress
+            )
+            if (exchangeAddress == ethers.constants.AddressZero) {
+                showNotification({
+                    id: "hello-there",
+                    autoClose: 5000,
+                    title: "Cannot create insurance contract",
+                    message: "No exchange for this token adddress",
+                    color: "red",
+                    icon: <IconX />,
+                    className: "my-notification-class",
+                    loading: false,
+                })
+                return
+            }
+
             const resForJsonCid = await fetch(
                 process.env.NEXT_PUBLIC_API_URL + "/api/json-upload-ipfs",
                 {
@@ -270,6 +312,20 @@ function Upload() {
                 resGroup.doc
             )
 
+            // string memory baseUri,
+            // uint256 minMembers,
+            // uint256 requestTime, // (in seconds) time before one can make a request
+            // uint256 validity, // (in seconds) insurance valid after startBefore seconds and user can claim insurance after validity
+            // uint256 claimTime, // (in seconds) time before use can make a insurance claim request, after this time judging will start.
+            // uint256 judgingTime, // (in seconds) time before judges should judge insurance claim requests.
+            // uint256 judgesLength, // number of judges
+            // uint256 amount, // amount everyone should put in the pool
+            // uint256 percentDivideIntoJudges, // percent of total pool amount that should be divided into judges (total pool amount = amount * members.length where members.length == s_memberNumber - 1) (only valid for judges who had judged every claim request)
+            // bool useLiquidityPool, // if true, the insurance contract will add funds to liquidity pool
+            // address liquidityTokenAddress, // address of liquidity token
+            // uint256 liquidityTokenAmount, // amount of liquidity token to add to liquidity pool
+            // string memory groupId
+
             const tx = await contractInstance.createInsurance(
                 jsonCid,
                 minMembers,
@@ -280,6 +336,11 @@ function Upload() {
                 judgesLength,
                 ethers.utils.parseUnits(amount.toString(), "ether"),
                 percentDivideIntoJudges,
+                useLiquidity,
+                useLiquidity ? liquidityTokenAddress : ethers.constants.AddressZero,
+                useLiquidity
+                    ? ethers.utils.parseUnits(liquidityTokenAmount.toString(), "ether")
+                    : 0,
                 resGroup.doc
                 // { gasLimit: 1000000 }
             )
@@ -304,7 +365,7 @@ function Upload() {
             updateNotification({
                 id: "load-data",
                 color: "teal",
-                title: "Upload Successfully",
+                title: "Insurance created",
                 icon: <IconCheck size={16} />,
                 autoClose: 2000,
             })
@@ -315,7 +376,7 @@ function Upload() {
             updateNotification({
                 id: "load-data",
                 autoClose: 5000,
-                title: "Unable to upload",
+                title: "Unable to create insurance contract",
                 message: "Check console for more details",
                 color: "red",
                 icon: <IconX />,
@@ -655,12 +716,73 @@ function Upload() {
                 />
             </Tooltip>
 
+            <Checkbox
+                mt="xl"
+                checked={useLiquidity}
+                onChange={(event) => setUseLiquidity(event.currentTarget.checked)}
+                label="Use funds in insurance to provide liquidity in the exchange"
+            />
+
+            {useLiquidity && (
+                <>
+                    <Tooltip
+                        label={liquidityTokenAddressValid ? "All good!" : "Invalid Token Address"}
+                        position="bottom-start"
+                        withArrow
+                        opened={liquidityTokenAddressOpened}
+                        color={liquidityTokenAddressValid ? "teal" : undefined}
+                    >
+                        <TextInput
+                            label={"Token Address for Liquidity pair with native token"}
+                            required
+                            placeholder={"Token Address"}
+                            onFocus={() => setLiquidityTokenAddressOpened(true)}
+                            onBlur={() => setLiquidityTokenAddressOpened(false)}
+                            mt="md"
+                            value={liquidityTokenAddress}
+                            onChange={(event) => {
+                                setLiquidityTokenAddress(event.target.value)
+                            }}
+                        />
+                    </Tooltip>
+
+                    <Tooltip
+                        label={
+                            liquidityTokenAmountValid
+                                ? "All good!"
+                                : "amount should be greater than 0"
+                        }
+                        position="bottom-start"
+                        withArrow
+                        opened={liquidityTokenAmountOpened}
+                        color={liquidityTokenAmountValid ? "teal" : undefined}
+                    >
+                        <TextInput
+                            label={"Token Amount for Liquidity pair with native token"}
+                            required
+                            placeholder={"Amount in " + currency}
+                            onFocus={() => setLiquidityTokenAmountOpened(true)}
+                            onBlur={() => setLiquidityTokenAmountOpened(false)}
+                            mt="md"
+                            value={liquidityTokenAmount}
+                            type="number"
+                            min={0}
+                            step="1"
+                            onWheel={(e) => e.target.blur()}
+                            onChange={(event) => {
+                                setLiquidityTokenAmount(event.target.value)
+                            }}
+                        />
+                    </Tooltip>
+                </>
+            )}
+
             <Center mt="md">
                 <Button
                     variant="gradient"
                     gradient={{ from: "teal", to: "lime", deg: 105 }}
                     onClick={() => {
-                        handlePost()
+                        handleCreate()
                     }}
                 >
                     Upload

@@ -67,7 +67,7 @@ export function NavbarMinimal() {
     ))
 
     return (
-        <Navbar height={750} width={{ base: 80 }} p="md">
+        <Navbar sx={{ height: "100vh" }} width={{ base: 80 }} p="md">
             <ActionToggle />
             <Navbar.Section grow mt={50}>
                 <Stack justify="center" spacing={50}>

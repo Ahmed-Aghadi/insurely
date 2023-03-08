@@ -2,7 +2,10 @@
 
 ## Details
 
-A decentralised p2p insurance platform.
+A decentralised p2p insurance and a trading platform.
+
+All the funds in the insurance pool can be used to provide liquidity to the exchange.
+And if opted to use pool funds in liquidity, rate of native token to liquidity token will be considered as rate at the time of removing liquidity from the exchange. So the exchange will act as a price oracle. Liquidity will be removed after judging period is over. And Liquidity will be keep on adding as members joins.
 
 Every user can create an insurance contract, which will have following informations:
 

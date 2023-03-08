@@ -47,6 +47,26 @@
                 "type": "uint256"
             },
             {
+                "internalType": "address",
+                "name": "exchangeFactoryAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "useLiquidityPool",
+                "type": "bool"
+            },
+            {
+                "internalType": "address",
+                "name": "liquidityTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "liquidityTokenAmount",
+                "type": "uint256"
+            },
+            {
                 "internalType": "string",
                 "name": "groupId",
                 "type": "string"
@@ -54,11 +74,6 @@
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
-    },
-    {
-        "inputs": [],
-        "name": "WithdrawFailed",
-        "type": "error"
     },
     {
         "anonymous": false,
@@ -834,13 +849,6 @@
     {
         "inputs": [],
         "name": "withdraw",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "withdrawMemberRequest",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
