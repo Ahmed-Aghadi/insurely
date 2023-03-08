@@ -30,7 +30,7 @@ If no judges had fullfilled their jobs then everyone except those judges will ge
 [Fullfillment logic in smart contract](https://github.com/Ahmed-Aghadi/insurely/blob/main/smart_contracts/contracts/Insurance.sol#L266)
 
 All contracts are deployed on fantom testnet. And moralis is used for getting data from contracts and performing other tasks like pushing json to ipfs folder, etc.
-[smart contract address](https://github.com/Ahmed-Aghadi/insurely/blob/main/client/my-app/constants/contractAddress.json)
+[smart contract address](https://github.com/Ahmed-Aghadi/insurely/blob/main/client/constants/contractAddress.json)
 
 | Tech stack used           |
 | ------------------------- |
