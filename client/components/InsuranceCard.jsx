@@ -108,6 +108,10 @@ function InsuranceCard({ insurance }) {
     const [members, setMembers] = useState(0)
     const [entryTime, setEntryTime] = useState(0)
     const [amount, setAmount] = useState(0)
+    const [useLiquidity, setUseLiquidity] = useState(false)
+    const [tokenAddress, setTokenAddress] = useState("")
+    const [tokenAmount, setTokenAmount] = useState(0)
+    const [tokenSymbol, setTokenSymbol] = useState("")
     const [judgesLength, setJudgesLength] = useState(0)
     const [percentDivideIntoJudges, setPercentDivideIntoJudges] = useState(0)
     const [loading, setLoading] = useState(true)
@@ -146,6 +150,25 @@ function InsuranceCard({ insurance }) {
         const pD = (await contractInstance.getPercentageDividedIntoJudges()).toString()
         console.log("percentDivideIntoJudges", pD)
         setPercentDivideIntoJudges(pD)
+        const uL = await contractInstance.getUseLiquidityPool()
+        console.log("useLiquidity", uL)
+        setUseLiquidity(uL)
+        const tA = await contractInstance.getLiquidityTokenAddress()
+        console.log("tokenAddress", tA)
+        setTokenAddress(tA)
+        const tA2 = ethers.utils
+            .formatEther(await contractInstance.getLiquidityTokenAmount())
+            .toString()
+        console.log("tokenAmount", tA2)
+        setTokenAmount(tA2)
+        const tokenContractInstance = new ethers.Contract(
+            tA,
+            erc20Abi,
+            ethers.getDefaultProvider(process.env.NEXT_PUBLIC_FANTOM_TESTNET_RPC_URL)
+        )
+        const tS = await tokenContractInstance.symbol()
+        console.log("tokenSymbol", tS)
+        setTokenSymbol(tS)
         setLoading(false)
     }
 
@@ -211,7 +234,8 @@ function InsuranceCard({ insurance }) {
                     <Group spacing={30}>
                         <div>
                             <Text size="xl" weight={700} sx={{ lineHeight: 1 }}>
-                                {amount} {currency}
+                                {amount} {currency}{" "}
+                                {useLiquidity ? `+ ${tokenAmount} ${tokenSymbol}` : ""}
                             </Text>
                             <Text
                                 size="sm"

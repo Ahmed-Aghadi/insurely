@@ -69,6 +69,10 @@ function InsurancePage() {
     const [isFinalJudgementCalculated, setIsFinalJudgementCalculated] = useState(false)
     // const [isFullfilled, setIsFullfilled] = useState(false)
     const [amount, setAmount] = useState(0)
+    const [useLiquidity, setUseLiquidity] = useState(false)
+    const [tokenAddress, setTokenAddress] = useState("")
+    const [tokenAmount, setTokenAmount] = useState(0)
+    const [tokenSymbol, setTokenSymbol] = useState("")
     const [judgesLength, setJudgesLength] = useState(0)
     const [percentDivideIntoJudges, setPercentDivideIntoJudges] = useState(0)
     const [active, setActive] = useState(false) // for timeline
@@ -240,6 +244,27 @@ function InsurancePage() {
             const pD = (await contractInstance.getPercentageDividedIntoJudges()).toString()
             console.log("percentDivideIntoJudges", pD)
             setPercentDivideIntoJudges(pD)
+
+            const uL = await contractInstance.getUseLiquidityPool()
+            console.log("useLiquidity", uL)
+            setUseLiquidity(uL)
+            const tA = await contractInstance.getLiquidityTokenAddress()
+            console.log("tokenAddress", tA)
+            setTokenAddress(tA)
+            const tA2 = ethers.utils
+                .formatEther(await contractInstance.getLiquidityTokenAmount())
+                .toString()
+            console.log("tokenAmount", tA2)
+            setTokenAmount(tA2)
+            const tokenContractInstance = new ethers.Contract(
+                tA,
+                erc20Abi,
+                ethers.getDefaultProvider(process.env.NEXT_PUBLIC_FANTOM_TESTNET_RPC_URL)
+            )
+            const tS = await tokenContractInstance.symbol()
+            console.log("tokenSymbol", tS)
+            setTokenSymbol(tS)
+
             setFound(true)
 
             const timeNow = Date.now() / 1000
@@ -438,6 +463,19 @@ function InsurancePage() {
 
             const jsonCid = jsonOfResForJsonCid.cid
             console.log("stored json with cid:", jsonCid)
+
+            const tokenContractInstance = new ethers.Contract(tokenAddress, erc20Abi, signer)
+            const allowance = await tokenContractInstance.allowance(
+                address,
+                router.query.insuranceAddress
+            )
+            if (allowance.lt(ethers.utils.parseEther(tokenAmount))) {
+                const tx = await tokenContractInstance.approve(
+                    router.query.insuranceAddress,
+                    ethers.utils.parseEther(tokenAmount)
+                )
+                await tx.wait()
+            }
 
             const tx = await contractInstance.makeJoiningRequest(jsonCid, {
                 value: ethers.utils.parseEther(amount),
@@ -764,6 +802,19 @@ function InsurancePage() {
                                 Judges will get {percentDivideIntoJudges}% of the total pool prize
                             </Badge>
                         </Center>
+                        <Center mt="lg">
+                            <Badge
+                                color="yellow"
+                                variant="outline"
+                                size="sm"
+                                style={{
+                                    fontFamily: "Greycliff CF, sans-serif",
+                                }}
+                            >
+                                Insurance price: {amount} {currency}{" "}
+                                {useLiquidity ? `+ ${tokenAmount} ${tokenSymbol}` : ""}
+                            </Badge>
+                        </Center>
                         <Timeline active={active} bulletSize={24} lineWidth={2}>
                             <Timeline.Item
                                 bullet={<IconGitBranch size={12} />}
@@ -1043,7 +1094,7 @@ function InsurancePage() {
                         onChange={(event) => setClaimDescription(event.currentTarget.value)}
                     />
                     <TextInput
-                        label="Claim Amount"
+                        label={"Claim Amount ( " + currency + " )"}
                         required
                         placeholder={"Claim Amount"}
                         mt="md"

@@ -638,6 +638,26 @@ contract Insurance is Ownable {
         return s_groupId;
     }
 
+    function getExchangeFactoryAddress() public view returns (address) {
+        return i_exchangeFactoryAddress;
+    }
+
+    function getExchangeAddress() public view returns (address) {
+        return i_exchangeAddress;
+    }
+
+    function getUseLiquidityPool() public view returns (bool) {
+        return i_useLiquidityPool;
+    }
+
+    function getLiquidityTokenAddress() public view returns (address) {
+        return i_liquidityTokenAddress;
+    }
+
+    function getLiquidityTokenAmount() public view returns (uint256) {
+        return i_liquidityTokenAmount;
+    }
+
     // function getIsAnyClaimAccepted() public view returns (bool) {
     //     return s_claimAccepted.length > 0;
     // }
