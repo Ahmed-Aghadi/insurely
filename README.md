@@ -32,6 +32,16 @@ If no judges had fullfilled their jobs then everyone except those judges will ge
 All contracts are deployed on fantom testnet.
 [smart contract address](https://github.com/Ahmed-Aghadi/insurely/blob/main/client/constants/contractAddress.json)
 
+
+#### Smart Contracts
+
+[Insurance Factory](https://testnet.ftmscan.com/address/0x3A8bB33E60ca28fA6b27F69A763a5978259f75E2)
+
+[Exchange Factory](https://testnet.ftmscan.com/address/0x7Fc29F9cFAD302505B7Ece08eB94bd2f209bb6A3)
+
+[Test Token](https://testnet.ftmscan.com/address/0x5452fD02e04Abc7101588014BB7A44d1e761e261)
+
+
 | Tech stack used           |
 | ------------------------- |
 | [Fantom](#fantom)         |
